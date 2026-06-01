@@ -61,14 +61,21 @@ class Monitor:
 		return self.dimensions[1]
 
 	def refresh(self):
-		print('false' if self.disabled else 'true')
+		print("hl.monitor({" +
+			f'output="{self.name}",' +
+			f"disabled={self.disabled},".lower() +
+			f"scale={self.scale}," +
+			f"position='{self.getX()}x{self.getY()}'," +
+			f"mode='{self.getW()}x{self.getH()}@{self.refreshRate}'" +
+			"})")
+
 		run(["hyprctl", "eval",
 			"hl.monitor({" +
-			f"output = '{self.name}'," +
-			f"mode = '{self.getW()}x{self.getH()}@{self.refreshRate}'," +
-			f"position = '{self.getX()}x{self.getY()}'," +
-			f"scale = {self.scale}," +
-			f"disabled = {'false' if self.disabled else 'true'}" +
+			f'output="{self.name}",' +
+			f"disabled={self.disabled},".lower() +
+			f"scale={self.scale}," +
+			f"position='{self.getX()}x{self.getY()}'," +
+			f"mode='{self.getW()}x{self.getH()}@{self.refreshRate}'" +
 			"})"
 		])
 
@@ -166,7 +173,7 @@ def main():
 			if not currentMouseState[0]:
 				perFrameExecEvent = None
 		if mouseDifferences[1]: # mclick
-			print("m2 dif")
+			pass
 		if mouseDifferences[2]: # rclick
 			hurt = checkHitboxes(draggers, scaleDownFactor)
 			if hurt:
@@ -197,7 +204,6 @@ main()
 
 # apply changes
 for dragger in draggers:
-	print("dragger")
 	monitor = dragger.monitor
 	monitor.position = (int(dragger.x), int(dragger.y))
 	monitor.refresh()
