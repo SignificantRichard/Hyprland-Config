@@ -118,7 +118,7 @@ def main():
 	mouseState = pg.mouse.get_pressed(num_buttons=3)
 	font = pg.font.Font("freesansbold.ttf", 32)
 
-	data = check_output(["hyprctl", "monitors", "-j"])
+	data = check_output(["hyprctl", "monitors", "all", "-j"])
 	data = loads(data)
 
 	numberOfMonitors = len(data)
