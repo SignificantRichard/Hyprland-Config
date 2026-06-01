@@ -1,0 +1,59 @@
+{
+    "layer": "top",
+    "modules-left": ["custom/start", "hyprland/window"],
+    "modules-center": ["hyprland/workspaces"],
+    "modules-right": ["network", "battery", "pulseaudio", "custom/layout", "clock"],
+    "custom/start": {
+        "format": " 󰣇",
+        "justify": "center",
+        "on-click": "exec hyprlauncher &",
+    },
+    "sway/window": {
+        "max-length": 25,
+        "format": "{}",
+    },
+    "battery": {
+        "format": "{icon}",
+        "format-icons": ["", "", "", "", ""]
+    },
+    "pulseaudio": {
+        "format": " {icon} ",
+        "format-icons": ["", "", "", ""],
+        "format-muted": "",
+        "format-icons": {
+		"headphone": "",
+		"hands-free": "󰢴",
+		"hdmi": "󰽟",
+		"headset": "",
+		"hifi": "",
+		"phone": "",
+		"phone-muted": "",
+		"portable": "",
+		"car": "",
+		"default": ["", "", "", ""]
+	},
+        "tooltip-format": "{volume}% {desc}",
+    },
+    "custom/layout": {
+        "format": "{text}",
+        "interval": 1,
+        "exec": "~/.config/hypr/waybar/getkb.sh"
+    },
+    "network": {
+        "format": " {icon} ",
+        "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+        "tooltip-format": "{essid} on {ifname} @ {ipaddr}\n{signalStrength}% {bandwidthUpBits} {bandwidthDownBits}\n{frequency}GHz",
+        "interval": 2,
+    },
+    "clock": {
+	"format": "{:%a, %d. %b  %H:%M}",
+	"format-alt": "{:%a, %d. %b  %H:%M}",
+	"tooltip-format": "󱍢 󰜃        󰶵",
+    },
+    "hyprland/workspaces": {
+	"persistent-workspaces": {
+		"*": [1,2,3,4,5,6,7,8,9,10]
+	},
+	"format": ""
+    }
+}

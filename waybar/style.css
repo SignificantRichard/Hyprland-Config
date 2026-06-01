@@ -1,0 +1,48 @@
+* {
+	font-weight: 800;
+	color: white;
+}
+
+tooltip label{
+	color: white;
+}
+
+.module {
+	padding: 4px 4px 4px 4px;
+	background-color: rgba(255, 255, 255, 0.2);
+	border-radius: 0 0 0 0;
+}
+
+#workspaces button {
+	padding: 0;
+	min-height: 0;
+}
+
+#workspaces button.visible {
+	border: dotted 2px rgba(45, 45, 60, 1);
+	background-color: transparent;
+}
+
+#workspaces button.active {
+	border: solid 2px rgba(45, 45, 60, 1);
+	background-color: transparent;
+}
+
+#workspaces {
+	border-radius: 0 0 8px 8px;
+	background-color: black;
+}
+
+#network {
+	border-radius: 2px 0 0 2px;
+}
+
+#window {
+	padding-left: 16px;
+	padding-right: 16px;
+	border-radius: 0 2px 2px 0;
+}
+
+window {
+	background: rgba(0, 0, 0, 0.2);
+}
