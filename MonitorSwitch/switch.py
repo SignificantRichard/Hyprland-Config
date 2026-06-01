@@ -28,7 +28,7 @@ class Dragger:
 
 	def followMouse(self, scaleDownFactor):
 		mx, my = pg.mouse.get_pos()
-		self.x, self.y = mx * scaleDownFactor, my * scaleDownFactor
+		self.x, self.y = min(mx, root.get_size()[0] - 25) * scaleDownFactor, min(my, root.get_size()[1] - 25) * scaleDownFactor
 		for resolution in self.resolutions:
 			mx = self.x % resolution[0]
 			if mx < 400:
@@ -61,13 +61,6 @@ class Monitor:
 		return self.dimensions[1]
 
 	def refresh(self):
-		print("hl.monitor({" +
-			f'output="{self.name}",' +
-			f"disabled={self.disabled},".lower() +
-			f"scale={self.scale}," +
-			f"position='{self.getX()}x{self.getY()}'," +
-			f"mode='{self.getW()}x{self.getH()}@{self.refreshRate}'" +
-			"})")
 
 		run(["hyprctl", "eval",
 			"hl.monitor({" +
