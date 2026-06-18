@@ -1,0 +1,16 @@
+# action
+on-button-left=dismiss
+
+# colors
+background-color=#28323866
+progress-color=#FFFFFF
+border-color=#FFFFFF
+
+# sizes
+border-size=1
+border-radius=4
+padding=10
+width=500
+
+# life
+default-timeout=5000

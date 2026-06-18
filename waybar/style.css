@@ -1,48 +1,50 @@
 * {
-	font-weight: 800;
 	color: white;
+	border-radius: 8px;
+	padding: 0 4px 0 4px;
+	font-weight: 900;font-family: "JetBrainsMono Nerd Font", sans-serif;
 }
 
-tooltip label{
-	color: white;
+
+window {
+	background-color: rgba(40,50,56,0.5);
 }
 
-.module {
-	padding: 4px 4px 4px 4px;
-	background-color: rgba(255, 255, 255, 0.2);
-	border-radius: 0 0 0 0;
+#custom-blank {
+	min-height: 32px;
 }
+
+#custom-start {
+	font-size: 18;
+}
+
+#custom-bar {
+	border-right: 2px solid white;
+	border-radius: 0;
+}
+
+/* workspaces */
 
 #workspaces button {
 	padding: 0;
+	margin: 2px;
 	min-height: 0;
+	border: 2px solid grey;
+	background-color: transparent;
 }
 
 #workspaces button.visible {
-	border: dotted 2px rgba(45, 45, 60, 1);
-	background-color: transparent;
+	border: 2px dashed white;
 }
 
 #workspaces button.active {
-	border: solid 2px rgba(45, 45, 60, 1);
-	background-color: transparent;
+	border: 2px solid white;
 }
 
-#workspaces {
-	border-radius: 0 0 8px 8px;
-	background-color: black;
-}
+/* clock */
 
-#network {
-	border-radius: 2px 0 0 2px;
-}
-
-#window {
-	padding-left: 16px;
-	padding-right: 16px;
-	border-radius: 0 2px 2px 0;
-}
-
-window {
-	background: rgba(0, 0, 0, 0.2);
+#clock {
+	border: 2px solid white;
+	margin: 0;
+	border-radius: 2px;
 }

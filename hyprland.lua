@@ -24,7 +24,6 @@ local menu        = "hyprlauncher"
 hl.env("XCURSOR_SIZE", "16")
 hl.env("HYPRCURSOR_SIZE", "16")
 
-
 -----------------------
 ----- PERMISSIONS -----
 -----------------------
@@ -117,6 +116,10 @@ hl.config({
 		touchpad = {
 			natural_scroll = false,
 		},
+
+		tablet = {
+			output = "current"
+		}
 	},
 })
 
@@ -176,8 +179,8 @@ for i = 1, 10 do
 end
 
 -- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+-- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
+-- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Scroll through existing workspaces with mainMod + scroll
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
@@ -286,7 +289,16 @@ hl.window_rule({
 })
 
 hl.window_rule({ match = { content = "game", fullscreen = true }, confine_pointer = true })
-hl.window_rule({ match = { class = "^steam_app_[0-9]{3,}"}, border_color = "rgba(00000000)", fullscreen = true, confine_pointer = true })
+
+
+hl.window_rule({ match = { class = "^steam_app_[0-9]{3,}", title = "\\w"}, border_color = "rgba(00000000)", fullscreen = true, confine_pointer = true , opacity = 1.0, immediate = true, border_size = 0})
+-- persisting anti cheat windows
+hl.window_rule({ match = { class = "^steam_app_[0-9]{3,}", title = ""}, opacity = 0.0})
+
+hl.window_rule({
+	match = { class = "statusbar.py"},
+	pin = true
+})
 
 hl.layer_rule({
 	name = "waybar blur",

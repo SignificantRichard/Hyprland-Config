@@ -1,0 +1,69 @@
+{
+	"layer": "top",
+	"margin": 4,
+	"spacing": 8,
+	"modules-left": ["custom/start", "custom/bar", "hyprland/workspaces"],
+	"modules-center": ["clock"],
+	"modules-right": ["custom/layout", "pulseaudio", "battery", "network", "cpu", "memory", "custom/blank"],
+	"custom/start": {
+		"format": " 󰣇 ",
+		"justify": "center",
+		"on-click": "exec hyprlauncher &",
+	},
+	"custom/bar": {
+		"format": " "
+	},
+	"custom/blank": {
+		"format": " "
+	},
+	"battery": {
+		"format": "{icon}",
+		"format-icons": ["", "", "", "", ""]
+	},
+	"cpu": {
+		"format": "  {usage}%"
+	},
+	"memory": {
+		"format": "  {percentage}%"
+	},
+	"pulseaudio": {
+		"format": "{icon} {volume}%",
+		"format-icons": ["", "", "", ""],
+		"format-muted": " ",
+		"format-icons": {
+			"headphone": "",
+			"hands-free":"󰢴",
+			"hdmi": "󰽟",
+			"headset": "",
+			"hifi": "",
+			"phone": "",
+			"phone-muted": "",
+			"portable": "",
+			"car": "",
+			"default": ["", "", "", ""]
+		},
+		"tooltip-format": "{volume}% {desc}",
+	},
+	"custom/layout": {
+		"format": "{text}",
+		"interval": 1,
+		"exec": "~/.config/hypr/waybar/getkb.sh"
+	},
+	"network": {
+		"format": "{icon} {signalStrength}%",
+		"format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+		"tooltip-format": "{essid} on {ifname} @ {ipaddr}\n{signalStrength}% {bandwidthUpBits} {bandwidthDownBits}\n{frequency}GHz",
+		"interval": 2,
+	},
+	"clock": {
+		"format": "{:%a, %d. %b  %H:%M}",
+		"format-alt": "{:%a, %d. %b  %H:%M}",
+		"tooltip-format": "󱍢 󰜃        󰶵",
+	},
+	"hyprland/workspaces": {
+		"persistent-workspaces": {
+			"*": [1,2,3,4,5,6,7,8,9,10]
+		},
+		"format": ""
+	}
+}
