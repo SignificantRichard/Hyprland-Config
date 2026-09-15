@@ -4,7 +4,7 @@
 	"spacing": 8,
 	"modules-left": ["custom/start", "custom/bar", "hyprland/workspaces"],
 	"modules-center": ["clock"],
-	"modules-right": ["custom/layout", "pulseaudio", "battery", "network", "cpu", "memory", "custom/blank"],
+	"modules-right": ["custom/layout", "pulseaudio", "network", "cpu", "memory", "battery", "custom/blank"],
 	"custom/start": {
 		"format": " 󰣇 ",
 		"justify": "center",
@@ -17,7 +17,7 @@
 		"format": " "
 	},
 	"battery": {
-		"format": "{icon}",
+		"format": "{icon} {capacity}%",
 		"format-icons": ["", "", "", "", ""]
 	},
 	"cpu": {

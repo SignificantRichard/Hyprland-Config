@@ -115,7 +115,9 @@ hl.config({
 
 		touchpad = {
 			natural_scroll = false,
+			clickfinger_behavior = true,
 		},
+		scroll_method = "edge",
 
 		tablet = {
 			output = "current"
@@ -133,7 +135,7 @@ hl.gesture({
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Devices/ for more
 hl.device({
 	name        = "epic-mouse-v1",
-	sensitivity = -0.5,
+	sensitivity = -0.35,
 })
 
 
@@ -159,7 +161,8 @@ hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
 --hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 hl.bind(mainMod .. " + W", checkWaybar)
-hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" -t png ~/Pictures/Screenshots/".. os.date("%y%m%d-%H%M%S")))
+hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" -t png ~/Pictures/Screenshots/".. os.date("%y%m%d-%H%M%S").. ".png"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 
 -- the monitor switcher
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("python $HOME/.config/hypr/MonitorSwitch/switch.py"))
@@ -307,3 +310,7 @@ hl.layer_rule({
 	xray = false,
 	ignore_alpha = 0.1,
 })
+ecosystem = {
+	no_donation_nag = true,
+	no_update_news = true,
+}
