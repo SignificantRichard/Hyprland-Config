@@ -39,7 +39,8 @@ hl.config({
 })
 
 hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
-
+hl.permission("/usr/bin/hyprlock", "screencopy", "allow")
+hl.permission("/usr/bin/grim", "screencopy", "allow")
 
 -- Default curves and animations, see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
 hl.curve("easeOutQuint",   { type = "bezier", points = { {0.23, 1},    {0.32, 1}    } })
@@ -135,7 +136,7 @@ hl.gesture({
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Devices/ for more
 hl.device({
 	name        = "epic-mouse-v1",
-	sensitivity = -0.35,
+	sensitivity = 1,
 })
 
 

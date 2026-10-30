@@ -14,3 +14,9 @@ width=500
 
 # life
 default-timeout=5000
+
+# markup
+markup=1
+
+# Formats the summary (%s) on line 1, and the body (%b) on line 2
+format=(%g) <b>%a</b>\n%s
