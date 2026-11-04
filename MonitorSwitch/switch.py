@@ -1,209 +1,816 @@
-# near unreadable :thumbsup:
-import pygame as pg
-from subprocess import check_output, run
 from json import loads
-from time import sleep
-from math import sqrt
+import os
+from subprocess import run
+import sys
+import pygame as pg
 
-root = pg.display.set_mode((1080, 610))
-bgColor = (0, 0, 0)
+pg.init()
 
-class Dragger:
-	def __init__(self, info, resolutions):
-		self.x = info.getX()
-		self.y = info.getY()
-		self.w = info.getW()
-		self.h = info.getH()
-		self.id = info.id
-		self.name = info.name
-		self.monitor = info
-		self.resolutions = resolutions
+WIDTH, HEIGHT = 1080, 640
+root = pg.display.set_mode((WIDTH, HEIGHT))
+bgColor = (20, 20, 20)
 
-	def mouseInHitbox(self, scaleDownFactor):
-		mx, my = pg.mouse.get_pos()
-		mx -= self.x / scaleDownFactor
-		my -= self.y / scaleDownFactor
+pg.display.set_caption("Monitor Switcher Utility")
 
-		return 0 < mx < self.w / scaleDownFactor and 0 < my < self.h / scaleDownFactor
+font = pg.font.SysFont(None, 24)
+font_large = pg.font.SysFont(None, 32, bold=True)
 
-	def followMouse(self, scaleDownFactor):
-		mx, my = pg.mouse.get_pos()
-		self.x, self.y = min(mx, root.get_size()[0] - 25) * scaleDownFactor, min(my, root.get_size()[1] - 25) * scaleDownFactor
-		for resolution in self.resolutions:
-			mx = self.x % resolution[0]
-			if mx < 400:
-				self.x = resolution[0] * int(self.x / resolution[0])
+# --------------------------------------------------
+# SETTINGS
+# --------------------------------------------------
 
-			my = self.y % resolution[1]
-			if my < 400:
-				self.y = resolution[1] * int(self.y / resolution[1])
+ZOOM = 1080 / HEIGHT
+
+MARGIN = 30
+
+# --------------------------------------------------
+# PATHS
+# --------------------------------------------------
+
+script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+wallpaper_path = os.path.join(
+    script_directory,
+    "../background/ready.jpg"
+)
+
+if not os.path.exists(wallpaper_path):
+    print(
+        f"Wallpaper not found at {wallpaper_path}. "
+        "Triggering image_blur.py..."
+    )
+
+    try:
+        blur_script = os.path.join(
+            script_directory,
+            "image_blur.py"
+        )
+
+        run([sys.executable, blur_script], check=True)
+
+    except Exception as e:
+        print(f"Error running image_blur.py: {e}")
+
+
+# --------------------------------------------------
+# LOAD WALLPAPER
+# --------------------------------------------------
+
+wallpaper = None
+
+if os.path.exists(wallpaper_path):
+    try:
+        wallpaper = pg.image.load(wallpaper_path).convert()
+
+        print(
+            f"Loaded wallpaper: "
+            f"{wallpaper.get_width()}x{wallpaper.get_height()}"
+        )
+
+    except Exception as e:
+        print(f"Failed to load wallpaper image: {e}")
+
+
+# --------------------------------------------------
+# COMMAND EXECUTION
+# --------------------------------------------------
+
+def command(com):
+
+    try:
+        result = run(
+            com,
+            shell=True,
+            capture_output=True
+        )
+
+        if result.returncode != 0:
+            return None
+
+        return loads(
+            result.stdout.decode("utf-8").strip()
+        )
+
+    except Exception:
+        return None
+
+
+# --------------------------------------------------
+# MONITOR CLASS
+# --------------------------------------------------
 
 class Monitor:
-	def __init__(self, info):
-		self.id = info["id"]
-		self.name = info["name"]
-		self.dimensions = (info["width"], info["height"])
-		self.position = (info["x"], info["y"])
-		self.refreshRate = info["refreshRate"]
-		self.scale = info["scale"]
-		self.disabled = info["disabled"]
 
-	def getX(self):
-		return self.position[0]
+    def __init__(
+        self,
+        id,
+        name,
+        x,
+        y,
+        width,
+        height,
+        refresh_rate,
+        scale,
+        focused,
+        active_ws,
+        disabled=False,
+    ):
 
-	def getY(self):
-		return self.position[1]
+        self.id = id
+        self.name = name
 
-	def getW(self):
-		return self.dimensions[0]
+        self.x = x
+        self.y = y
 
-	def getH(self):
-		return self.dimensions[1]
+        self.width = width
+        self.height = height
 
-	def refresh(self):
+        self.refresh_rate = refresh_rate
+        self.scale = scale
 
-		run(["hyprctl", "eval",
-			"hl.monitor({" +
-			f'output="{self.name}",' +
-			f"disabled={self.disabled},".lower() +
-			f"scale={self.scale}," +
-			f"position='{self.getX()}x{self.getY()}'," +
-			f"mode='{self.getW()}x{self.getH()}@{self.refreshRate}'" +
-			"})"
-		])
+        self.focused = focused
+        self.active_ws = active_ws
 
-draggers = []
+        self.disabled = disabled
+
+
+# --------------------------------------------------
+# APPLY MONITOR POSITIONS
+# --------------------------------------------------
+
+def apply_hyprland_positions(monitors):
+
+    for m in monitors:
+
+        disabled_str = str(m.disabled).lower()
+
+        eval_str = (
+            f"hl.monitor({{"
+            f'output="{m.name}",'
+            f"disabled={disabled_str},"
+            f"scale={m.scale},"
+            f"position='{m.x}x{m.y}',"
+            f"mode='{m.width}x{m.height}@{m.refresh_rate}'"
+            f"}})"
+        )
+
+        run(["hyprctl", "eval", eval_str])
+
+
+# --------------------------------------------------
+# TOGGLE MONITOR
+# --------------------------------------------------
+
+def toggle_monitor(mon_id, monitors):
+
+    m = next(
+        (mon for mon in monitors if mon.id == mon_id),
+        None
+    )
+
+    if not m:
+        return
+
+    active_count = sum(
+        1 for mon in monitors if not mon.disabled
+    )
+
+    if not m.disabled and active_count <= 1:
+
+        print(
+            f"Safety check: Cannot disable {m.name} "
+            "because it is the only active monitor!"
+        )
+
+        return
+
+    m.disabled = not m.disabled
+
+    disabled_str = str(m.disabled).lower()
+
+    eval_str = (
+        f"hl.monitor({{"
+        f'output="{m.name}",'
+        f"disabled={disabled_str},"
+        f"scale={m.scale},"
+        f"position='{m.x}x{m.y}',"
+        f"mode='{m.width}x{m.height}@{m.refresh_rate}'"
+        f"}})"
+    )
+
+    run(["hyprctl", "eval", eval_str])
+
+    print(
+        f"Monitor {m.name} "
+        f"(ID: {m.id}) disabled = {m.disabled}"
+    )
+
+
+# --------------------------------------------------
+# MOVE MONITOR
+# --------------------------------------------------
+
+def execute_move(src_id, direction, tgt_id, monitors):
+
+    src = next(
+        (m for m in monitors if m.id == src_id),
+        None
+    )
+
+    tgt = next(
+        (m for m in monitors if m.id == tgt_id),
+        None
+    )
+
+    if not src or not tgt or src == tgt:
+        return
+
+    if direction == "RIGHT":
+
+        src.x = tgt.x + tgt.width
+        src.y = tgt.y
+
+    elif direction == "LEFT":
+
+        src.x = tgt.x - src.width
+        src.y = tgt.y
+
+    elif direction == "DOWN":
+
+        src.x = tgt.x
+        src.y = tgt.y + tgt.height
+
+    elif direction == "UP":
+
+        src.x = tgt.x
+        src.y = tgt.y - src.height
+
+    others = [
+        m for m in monitors
+        if m.id != src.id and m.id != tgt.id
+    ]
+
+    if direction == "RIGHT":
+
+        others.sort(key=lambda m: m.x)
+
+        current_bound = src.x + src.width
+
+        for m in others:
+
+            if (
+                m.x < current_bound
+                and (m.x + m.width) > src.x
+            ):
+
+                m.x = current_bound
+                current_bound = m.x + m.width
+
+    elif direction == "LEFT":
+
+        others.sort(
+            key=lambda m: m.x,
+            reverse=True
+        )
+
+        current_bound = src.x
+
+        for m in others:
+
+            if (
+                (m.x + m.width) > current_bound
+                and m.x < (src.x + src.width)
+            ):
+
+                m.x = current_bound - m.width
+                current_bound = m.x
+
+    elif direction == "DOWN":
+
+        others.sort(key=lambda m: m.y)
+
+        current_bound = src.y + src.height
+
+        for m in others:
+
+            if (
+                m.y < current_bound
+                and (m.y + m.height) > src.y
+            ):
+
+                m.y = current_bound
+                current_bound = m.y + m.height
+
+    elif direction == "UP":
+
+        others.sort(
+            key=lambda m: m.y,
+            reverse=True
+        )
+
+        current_bound = src.y
+
+        for m in others:
+
+            if (
+                (m.y + m.height) > current_bound
+                and m.y < (src.y + src.height)
+            ):
+
+                m.y = current_bound - m.height
+                current_bound = m.y
+
+    apply_hyprland_positions(monitors)
+
+
+# --------------------------------------------------
+# PREPARE VIRTUAL DESKTOP IMAGE
+# --------------------------------------------------
+
+def prepare_virtual_desktop(monitors):
+
+    if not monitors or not wallpaper:
+        return None, 0, 0, 1, 1
+
+    min_x = min(m.x for m in monitors)
+    min_y = min(m.y for m in monitors)
+
+    max_x = max(
+        m.x + m.width for m in monitors
+    )
+
+    max_y = max(
+        m.y + m.height for m in monitors
+    )
+
+    virtual_width = max(max_x - min_x, 1)
+    virtual_height = max(max_y - min_y, 1)
+
+    # ------------------------------------------
+    # WALLPAPER ZOOM
+    # ------------------------------------------
+
+    image_scale = max(
+        virtual_width / wallpaper.get_width(),
+        virtual_height / wallpaper.get_height()
+    ) * ZOOM
+
+    scaled_width = max(
+        1,
+        int(wallpaper.get_width() * image_scale)
+    )
+
+    scaled_height = max(
+        1,
+        int(wallpaper.get_height() * image_scale)
+    )
+
+    virtual_image = pg.transform.smoothscale(
+        wallpaper,
+        (scaled_width, scaled_height)
+    )
+
+    # ------------------------------------------
+    # CENTER CROP
+    # ------------------------------------------
+
+    crop_x = (scaled_width - virtual_width) // 2
+    crop_y = (scaled_height - virtual_height) // 2
+
+    virtual_image = virtual_image.subsurface(
+        pg.Rect(
+            crop_x,
+            crop_y,
+            virtual_width,
+            virtual_height
+        )
+    ).copy()
+
+    return (
+        virtual_image,
+        min_x,
+        min_y,
+        virtual_width,
+        virtual_height
+    )
+
+
+# --------------------------------------------------
+# MAIN
+# --------------------------------------------------
 
 def main():
 
-	def drawButton(x, y, w, h, text="Edit This", font=None):
-		color = (255, 255, 255)
-		pg.draw.rect(root, color, (x + 5, y, w - 10, h))
-		pg.draw.rect(root, color, (x, y + 5, w, h - 10))
+    render = True
+    seq_buffer = []
 
-		w -= 5
-		h -= 5
+    clock = pg.time.Clock()
 
-		pg.draw.circle(root, color, (x + 5, y + 5), 5, draw_top_left=True)
-		pg.draw.circle(root, color, (x + 5, y + h), 5, draw_bottom_left=True)
-		pg.draw.circle(root, color, (x + w, y + h), 5, draw_bottom_right=True)
-		pg.draw.circle(root, color, (x + w, y + 5), 5, draw_top_right=True)
+    num_keys = {
+        pg.K_0: 0,
+        pg.K_1: 1,
+        pg.K_2: 2,
+        pg.K_3: 3,
+        pg.K_4: 4,
+        pg.K_5: 5,
+        pg.K_6: 6,
+        pg.K_7: 7,
+        pg.K_8: 8,
+        pg.K_9: 9,
+    }
 
-		w += 5
-		h += 5
+    dir_keys = {
+        pg.K_RIGHT: "RIGHT",
+        pg.K_LEFT: "LEFT",
+        pg.K_UP: "UP",
+        pg.K_DOWN: "DOWN",
+    }
 
-		if not font:
-			return
+    while render:
 
-		text = font.render(text, True, (0, 0, 0), None)
-		textRect = text.get_rect()
-		textRect.center = (x + w / 2, y + h / 2)
-		root.blit(text, textRect)
+        # ------------------------------------------
+        # FETCH MONITOR DATA
+        # ------------------------------------------
 
-	def checkHitboxes(draggers, scaleDownFactor):
-		for dragger in draggers:
-			if dragger.mouseInHitbox(scaleDownFactor):
-				return dragger
-		return None
+        raw_monitors = command(
+            "hyprctl monitors all -j"
+        ) or []
 
-	pg.font.init()
+        monitors = []
+        active_monitor = None
 
-	mouseState = pg.mouse.get_pressed(num_buttons=3)
-	font = pg.font.Font("freesansbold.ttf", 32)
+        for m in raw_monitors:
 
-	data = check_output(["hyprctl", "monitors", "all", "-j"])
-	data = loads(data)
+            mon = Monitor(
+                id=m.get("id", 0),
+                name=m.get("name", ""),
 
-	numberOfMonitors = len(data)
+                x=m.get("x", 0),
+                y=m.get("y", 0),
 
-	global draggers
+                width=m.get("width", 1920),
+                height=m.get("height", 1080),
 
-	perFrameExecEvent = None
+                refresh_rate=m.get("refreshRate", 60),
+                scale=m.get("scale", 1.0),
 
-	extremes = [0, 0, 0, 0] # 0 l 1 t 2 r 3 b
+                focused=m.get("focused", False),
 
-	resolutions = []
-	for i in range(numberOfMonitors):
-		resolution = (data[i]["width"], data[i]["height"])
-		if not resolution in resolutions:
-			resolutions.append(resolution)
+                active_ws=m.get(
+                    "activeWorkspace", {}
+                ).get("id", 1),
 
-	for i in range(numberOfMonitors):
-		monitor = Monitor(data[i])
-		draggers.append(Dragger(monitor, resolutions))
-		extremes[0] = data[i]["x"] if data[i]["x"] < extremes[0] else extremes[0]
-		extremes[2] = data[i]["x"] + data[i]["width"] if data[i]["x"] + data[i]["width"] > extremes[2] else extremes[2]
-		extremes[1] = data[i]["y"] if data[i]["y"] < extremes[1] else extremes[1]
-		extremes[3] = data[i]["y"] + data[i]["height"] if data[i]["y"] + data[i]["height"] > extremes[3] else extremes[3]
+                disabled=m.get("disabled", False),
+            )
 
-	scaleDownFactor = max(
-		abs(extremes[0]) + abs(extremes[2]) / root.get_size()[0],
-		abs(extremes[1]) + abs(extremes[3]) / root.get_size()[1]
-	) * 2
+            monitors.append(mon)
 
-	baseDrawOffset = (1920 / scaleDownFactor, 1080 / scaleDownFactor)
+            if mon.focused:
+                active_monitor = mon
 
-	while True:
-		for event in pg.event.get():
-			if event.type == pg.QUIT:
-				return
+        if not active_monitor and monitors:
 
-		currentMouseState = pg.mouse.get_pressed(num_buttons=3)
+            active_monitor = next(
+                (
+                    m for m in monitors
+                    if not m.disabled
+                ),
+                monitors[0]
+            )
 
-		mouseDifferences = []
+        # ------------------------------------------
+        # BUILD VIRTUAL DESKTOP
+        # ------------------------------------------
 
-		for i in range(len(currentMouseState)):
-			mouseDifferences.append(currentMouseState[i] != mouseState[i])
+        (
+            virtual_image,
+            min_x,
+            min_y,
+            virtual_width,
+            virtual_height
+        ) = prepare_virtual_desktop(monitors)
 
-		if mouseDifferences[0]: # lclick
-			# check hitboxes
-			hurt = checkHitboxes(draggers, scaleDownFactor)
-			if hurt:
-				# clicked a box?
-				if currentMouseState[0]:
-					# start dragging
-					perFrameExecEvent = hurt.followMouse
-			if not currentMouseState[0]:
-				perFrameExecEvent = None
-		if mouseDifferences[1]: # mclick
-			pass
-		if mouseDifferences[2]: # rclick
-			hurt = checkHitboxes(draggers, scaleDownFactor)
-			if hurt:
-				if not currentMouseState[2]:
-					hurt.monitor.disabled = not hurt.monitor.disabled
+        # ------------------------------------------
+        # DISPLAY SCALE
+        # ------------------------------------------
 
-		if perFrameExecEvent:
-			perFrameExecEvent(scaleDownFactor)
+        if virtual_image:
 
-		root.fill(bgColor)
+            scale_factor = min(
+                (WIDTH - MARGIN * 2) / virtual_width,
+                (HEIGHT - MARGIN * 2) / virtual_height
+            )
 
-		# draw elements
-		for dragger in draggers:
-			drawButton(
-				dragger.x / scaleDownFactor,
-				dragger.y / scaleDownFactor,
-				dragger.w / scaleDownFactor,
-				dragger.h / scaleDownFactor,
-				dragger.name,
-				font
-			)
+            desktop_draw_width = (
+                virtual_width * scale_factor
+            )
 
-		pg.display.flip()
-		mouseState = currentMouseState
-		sleep(1 / 60)
+            desktop_draw_height = (
+                virtual_height * scale_factor
+            )
 
-main()
+            desktop_offset_x = (
+                WIDTH - desktop_draw_width
+            ) / 2
 
-# apply changes
-for dragger in draggers:
-	monitor = dragger.monitor
-	monitor.position = (int(dragger.x), int(dragger.y))
-	monitor.refresh()
+            desktop_offset_y = (
+                HEIGHT - desktop_draw_height
+            ) / 2
 
-# reapply the wallpaper
+        else:
 
-run(["pkill", "hyprpaper"])
-run(["hyprctl", "eval", 'hl.exec_cmd("hyprpaper &")'])
+            scale_factor = 0.12
 
-print("exit")
+            desktop_offset_x = 0
+            desktop_offset_y = 0
+
+        # ------------------------------------------
+        # BACKGROUND
+        # ------------------------------------------
+
+        root.fill(bgColor)
+
+        if wallpaper:
+
+            full_bg = pg.transform.smoothscale(
+                wallpaper,
+                (WIDTH, HEIGHT)
+            )
+
+            root.blit(full_bg, (0, 0))
+
+            tint = pg.Surface(
+                (WIDTH, HEIGHT),
+                pg.SRCALPHA
+            )
+
+            tint.fill((0, 0, 0, 170))
+
+            root.blit(tint, (0, 0))
+
+        # ------------------------------------------
+        # INPUT EVENTS
+        # ------------------------------------------
+
+        for event in pg.event.get():
+
+            if event.type == pg.QUIT:
+
+                render = False
+
+            elif event.type == pg.KEYDOWN:
+
+                if event.key == pg.K_ESCAPE:
+
+                    seq_buffer.clear()
+
+                elif event.key in num_keys:
+
+                    num = num_keys[event.key]
+
+                    if (
+                        len(seq_buffer) == 1
+                        and seq_buffer[0] == num
+                    ):
+
+                        toggle_monitor(
+                            num,
+                            monitors
+                        )
+
+                        seq_buffer.clear()
+
+                    elif len(seq_buffer) in (0, 2):
+
+                        seq_buffer.append(num)
+
+                    elif len(seq_buffer) == 1:
+
+                        seq_buffer = [num]
+
+                elif event.key in dir_keys:
+
+                    if len(seq_buffer) == 1:
+
+                        seq_buffer.append(
+                            dir_keys[event.key]
+                        )
+
+                if len(seq_buffer) == 3:
+
+                    execute_move(
+                        seq_buffer[0],
+                        seq_buffer[1],
+                        seq_buffer[2],
+                        monitors
+                    )
+
+                    seq_buffer.clear()
+
+        # ------------------------------------------
+        # RENDER MONITORS
+        # ------------------------------------------
+
+        if active_monitor and virtual_image:
+
+            for m in monitors:
+
+                draw_x = (
+                    desktop_offset_x
+                    + (m.x - min_x) * scale_factor
+                )
+
+                draw_y = (
+                    desktop_offset_y
+                    + (m.y - min_y) * scale_factor
+                )
+
+                draw_w = max(
+                    1,
+                    int(m.width * scale_factor)
+                )
+
+                draw_h = max(
+                    1,
+                    int(m.height * scale_factor)
+                )
+
+                draw_x = int(draw_x)
+                draw_y = int(draw_y)
+
+                # ----------------------------------
+                # X-RAY PORTAL
+                # ----------------------------------
+
+                src_rect = pg.Rect(
+                    m.x - min_x,
+                    m.y - min_y,
+                    m.width,
+                    m.height
+                )
+
+                clipped_rect = src_rect.clip(
+                    virtual_image.get_rect()
+                )
+
+                if (
+                    clipped_rect.width > 0
+                    and clipped_rect.height > 0
+                ):
+
+                    slice_surf = virtual_image.subsurface(
+                        clipped_rect
+                    )
+
+                    preview_slice = pg.transform.smoothscale(
+                        slice_surf,
+                        (draw_w, draw_h)
+                    )
+
+                    root.blit(
+                        preview_slice,
+                        (draw_x, draw_y)
+                    )
+
+                else:
+
+                    pg.draw.rect(
+                        root,
+                        (40, 40, 40),
+                        (draw_x, draw_y, draw_w, draw_h)
+                    )
+
+                # ----------------------------------
+                # MONITOR TINT
+                # ----------------------------------
+
+                tint_box = pg.Surface(
+                    (draw_w, draw_h),
+                    pg.SRCALPHA
+                )
+
+                if m.disabled:
+
+                    tint_box.fill(
+                        (20, 20, 20, 190)
+                    )
+
+                elif m.focused:
+
+                    tint_box.fill(
+                        (0, 60, 40, 80)
+                    )
+
+                else:
+
+                    tint_box.fill(
+                        (0, 0, 0, 90)
+                    )
+
+                root.blit(
+                    tint_box,
+                    (draw_x, draw_y)
+                )
+
+                # ----------------------------------
+                # BORDER
+                # ----------------------------------
+
+                if m.disabled:
+
+                    border_color = (120, 40, 40)
+
+                elif m.focused:
+
+                    border_color = (0, 255, 128)
+
+                else:
+
+                    border_color = (100, 100, 100)
+
+                pg.draw.rect(
+                    root,
+                    border_color,
+                    (
+                        draw_x,
+                        draw_y,
+                        draw_w,
+                        draw_h
+                    ),
+                    2
+                )
+
+                # ----------------------------------
+                # MONITOR LABELS
+                # ----------------------------------
+
+                id_surf = font_large.render(
+                    f"ID: {m.id}",
+                    True,
+                    (255, 255, 255)
+                )
+
+                root.blit(
+                    id_surf,
+                    (draw_x + 10, draw_y + 10)
+                )
+
+                status_text = (
+                    "DISABLED"
+                    if m.disabled
+                    else f"WS: {m.active_ws} ({m.name})"
+                )
+
+                ws_surf = font.render(
+                    status_text,
+                    True,
+                    (
+                        (255, 100, 100)
+                        if m.disabled
+                        else (220, 220, 220)
+                    )
+                )
+
+                root.blit(
+                    ws_surf,
+                    (draw_x + 10, draw_y + 40)
+                )
+
+        # ------------------------------------------
+        # KEY SEQUENCE DISPLAY
+        # ------------------------------------------
+
+        seq_str = (
+            " -> ".join(str(s) for s in seq_buffer)
+            or "None (Press ESC to clear)"
+        )
+
+        seq_text = font.render(
+            f"Key Sequence: {seq_str} "
+            "(Press number twice to toggle enable/disable)",
+            True,
+            (255, 255, 0)
+        )
+
+        root.blit(
+            seq_text,
+            (20, HEIGHT - 40)
+        )
+
+        # ------------------------------------------
+        # UPDATE DISPLAY
+        # ------------------------------------------
+
+        pg.display.flip()
+
+        clock.tick(20)
+
+    pg.quit()
+
+
+# --------------------------------------------------
+# ENTRY POINT
+# --------------------------------------------------
+
+if __name__ == "__main__":
+    main()

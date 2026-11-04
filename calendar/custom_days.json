@@ -1,0 +1,7 @@
+{
+    "01-01": {"title": "New Year's Day", "color": "#B43232"},
+    "02-14": {"title": "Valentine's Day", "color": "#C83264"},
+    "07-01": {"title": "Canada Day", "color": "#C80000"},
+    "10-31": {"title": "Halloween", "color": "#8032C8"},
+    "12-25": {"title": "Christmas Day", "color": "#328032"}
+}
